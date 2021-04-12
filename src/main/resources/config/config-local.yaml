@@ -1,0 +1,28 @@
+api:
+  autodiscoveryID: "16246314"
+
+hc:
+ logger:
+  package: "com.mulesoft.catalyst.hc.us.core.administration"
+
+http:
+  host: "0.0.0.0"
+  port: "8081"
+  entryPath: "/api/"
+  defaultRecoredLimit: "20" 
+  
+until:
+  successful:
+    maxretries: "3"
+    timebetween: "3000"
+  
+salesforce:
+  url: "https://login.salesforce.com/services/Soap/u/51.0"
+  username: "hls@20210208.demo"
+  consumerKey: "3MVG9kBt168mda_.CaX24GAHHB28Mfz5N5BqTiwuDaBZzPDsyGEi9T7G32GwPO8xBgKMGXU_S7HRWzsXDSexw"
+  
+fhir:
+  host: "https://dev.mythicalhealthcare.co/administration"
+  requestUri: "/"
+  validatorVersion: "4.0"
+  

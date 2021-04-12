@@ -1,0 +1,3844 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd ">
+    <flow name="fhir-r4-medications-api-main">
+        <http:listener config-ref="fhir-r4-medication-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="fhir-r4-medications-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="fhir-r4-medications-api-console">
+        <http:listener config-ref="fhir-r4-medication-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="fhir-r4-medications-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="put:\Immunization:fhir-r4-medications-api-config">
+        <logger level="INFO" message="put:\Immunization:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\Medication:fhir-r4-medications-api-config">
+        <logger level="INFO" message="put:\Medication:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\MedicationRequest:fhir-r4-medications-api-config">
+        <logger level="INFO" message="put:\MedicationRequest:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\MedicationStatement:fhir-r4-medications-api-config">
+        <logger level="INFO" message="put:\MedicationStatement:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\MedicationStatement\(id):application\fhir+json:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\MedicationStatement\(id):application\fhir+json:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\Immunization\(id):application\fhir+json:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\Immunization\(id):application\fhir+json:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\MedicationRequest\(id):application\fhir+json:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\MedicationRequest\(id):application\fhir+json:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\Medication\(id):application\fhir+json:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\Medication\(id):application\fhir+json:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\Immunization\(id):application\fhir+xml:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\Immunization\(id):application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\MedicationRequest\(id):application\fhir+xml:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\MedicationRequest\(id):application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\Medication\(id):application\fhir+xml:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\Medication\(id):application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="put:\MedicationStatement\(id):application\fhir+xml:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="put:\MedicationStatement\(id):application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\Immunization:fhir-r4-medications-api-config">
+        <logger level="INFO" message="delete:\Immunization:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\Medication:fhir-r4-medications-api-config">
+        <logger level="INFO" message="delete:\Medication:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\MedicationRequest:fhir-r4-medications-api-config">
+        <logger level="INFO" message="delete:\MedicationRequest:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\MedicationStatement:fhir-r4-medications-api-config">
+        <logger level="INFO" message="delete:\MedicationStatement:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\Immunization\(id):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\Immunization\(id):fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\MedicationRequest\(id):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\MedicationRequest\(id):fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\MedicationStatement\(id):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\MedicationStatement\(id):fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="delete:\Medication\(id):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <logger level="INFO" message="delete:\Medication\(id):fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="get:\Immunization:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "634da34e-ecc6-4f40-9540-909278ca28b3",
+  meta: {
+    lastUpdated: "2020-08-26T20:13:10.935+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Immunization?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=634da34e-ecc6-4f40-9540-909278ca28b3&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+      resource: {
+        resourceType: "Immunization",
+        id: "f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "140",
+              display: "Influenza, seasonal, injectable, preservative free"
+            }
+          ],
+          text: "Influenza, seasonal, injectable, preservative free"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/576cb260-a0bd-46c0-be6a-e726d4375fa8"
+        },
+        occurrenceDateTime: "2016-05-08T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+      resource: {
+        resourceType: "Immunization",
+        id: "8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "114",
+              display: "meningococcal MCV4P"
+            }
+          ],
+          text: "meningococcal MCV4P"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/a60e158d-a7fb-4336-b46b-8f27f925bb70"
+        },
+        occurrenceDateTime: "2010-04-18T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Medication:fhir-r4-medications-api-config">
+        <flow-ref doc:name="implementation-medication_search-medication" doc:id="3c573cd9-cb5e-4202-8ed1-837da5b87f85" name="implementation-medication_search-medication"/>
+    </flow>
+    <flow name="get:\MedicationRequest:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "febb4ac2-5076-4123-a6f6-a7f35d81866d",
+  meta: {
+    lastUpdated: "2020-08-26T22:21:47.953+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationRequest?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=febb4ac2-5076-4123-a6f6-a7f35d81866d&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619183",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619183",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:03:51.446+00:00",
+          source: "#YiCB0BwbDHT3gseI"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }, 
+          {
+            resourceType: "Patient",
+            id: "M12345"
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619184",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619184",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:05:32.567+00:00",
+          source: "#aRY0YhHOfJM0sa5c"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationStatement:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "4f4108cf-82e3-4597-8ab2-30aa3c6e5b91",
+  meta: {
+    lastUpdated: "2020-08-26T22:45:18.340+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationStatement?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=4f4108cf-82e3-4597-8ab2-30aa3c6e5b91&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68957",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68957",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">metformin 1000mg twice daily</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "411533003",
+              display: "metformin 1000mg"
+            }
+          ],
+          text: "metformin 1000mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "1 tab twice daily",
+            timing: {
+              repeat: {
+                frequency: 2,
+                period: 1,
+                periodUnit: "d"
+              }
+            }
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68960",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68960",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">prednisone 20mg 2 tabs/day</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "325456002",
+              display: "prednisone 20mg"
+            }
+          ],
+          text: "prednisone 20mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "2 tabs once daily",
+            timing: {
+              repeat: {
+                frequency: 1,
+                period: 1,
+                periodUnit: "d"
+              }
+            },
+            asNeededBoolean: true
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Immunization\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "634da34e-ecc6-4f40-9540-909278ca28b3",
+  meta: {
+    lastUpdated: "2020-08-26T20:13:10.935+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Immunization?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=634da34e-ecc6-4f40-9540-909278ca28b3&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+      resource: {
+        resourceType: "Immunization",
+        id: "f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "140",
+              display: "Influenza, seasonal, injectable, preservative free"
+            }
+          ],
+          text: "Influenza, seasonal, injectable, preservative free"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/576cb260-a0bd-46c0-be6a-e726d4375fa8"
+        },
+        occurrenceDateTime: "2016-05-08T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+      resource: {
+        resourceType: "Immunization",
+        id: "8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "114",
+              display: "meningococcal MCV4P"
+            }
+          ],
+          text: "meningococcal MCV4P"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/a60e158d-a7fb-4336-b46b-8f27f925bb70"
+        },
+        occurrenceDateTime: "2010-04-18T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Medication\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "70462b97-d7ba-4253-ab14-c01667fc2a43",
+  meta: {
+    lastUpdated: "2020-08-26T21:57:02.363+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Medication?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=70462b97-d7ba-4253-ab14-c01667fc2a43&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619258",
+      resource: {
+        resourceType: "Medication",
+        id: "619258",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:04.377+00:00",
+          source: "#VHEqfi9swcVL50Ib",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "860975",
+              display: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+            }
+          ],
+          text: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619289",
+      resource: {
+        resourceType: "Medication",
+        id: "619289",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:05.402+00:00",
+          source: "#P8TzKWgZsdrAA60P",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "106892",
+              display: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+            }
+          ],
+          text: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/26235",
+      resource: {
+        resourceType: "Medication",
+        id: "26235",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-09-24T20:17:27.156+00:00",
+          source: "#d63bb9d8c4c20d3e"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\"> Tylenol PM </div></div>"
+        },
+        contained: [
+          {
+            resourceType: "Organization",
+            id: "org2",
+            name: "Johnson and Johnson Consume Inc, McNeil Consumer Healthcare Division"
+          }
+        ],
+        code: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/ndc",
+              code: "50580-506-02",
+              display: "Tylenol PM"
+            }
+          ]
+        },
+        manufacturer: {
+          reference: "#org2"
+        },
+        form: {
+          coding: [
+            {
+              system: "http://snomed.info/sct",
+              code: "385057009",
+              display: "Film-coated tablet (qualifier value)"
+            }
+          ]
+        },
+        ingredient: [
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "315266",
+                  display: "Acetaminophen 500 MG"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 500,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }, 
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "901813",
+                  display: "Diphenhydramine Hydrochloride 25 mg"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 25,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }
+        ],
+        batch: {
+          lotNumber: "9494788",
+          expirationDate: "2017-05-22"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Medication\(id)\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "70462b97-d7ba-4253-ab14-c01667fc2a43",
+  meta: {
+    lastUpdated: "2020-08-26T21:57:02.363+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Medication?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=70462b97-d7ba-4253-ab14-c01667fc2a43&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619258",
+      resource: {
+        resourceType: "Medication",
+        id: "619258",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:04.377+00:00",
+          source: "#VHEqfi9swcVL50Ib",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "860975",
+              display: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+            }
+          ],
+          text: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619289",
+      resource: {
+        resourceType: "Medication",
+        id: "619289",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:05.402+00:00",
+          source: "#P8TzKWgZsdrAA60P",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "106892",
+              display: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+            }
+          ],
+          text: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/26235",
+      resource: {
+        resourceType: "Medication",
+        id: "26235",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-09-24T20:17:27.156+00:00",
+          source: "#d63bb9d8c4c20d3e"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\"> Tylenol PM </div></div>"
+        },
+        contained: [
+          {
+            resourceType: "Organization",
+            id: "org2",
+            name: "Johnson and Johnson Consume Inc, McNeil Consumer Healthcare Division"
+          }
+        ],
+        code: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/ndc",
+              code: "50580-506-02",
+              display: "Tylenol PM"
+            }
+          ]
+        },
+        manufacturer: {
+          reference: "#org2"
+        },
+        form: {
+          coding: [
+            {
+              system: "http://snomed.info/sct",
+              code: "385057009",
+              display: "Film-coated tablet (qualifier value)"
+            }
+          ]
+        },
+        ingredient: [
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "315266",
+                  display: "Acetaminophen 500 MG"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 500,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }, 
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "901813",
+                  display: "Diphenhydramine Hydrochloride 25 mg"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 25,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }
+        ],
+        batch: {
+          lotNumber: "9494788",
+          expirationDate: "2017-05-22"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Immunization\(id)\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "634da34e-ecc6-4f40-9540-909278ca28b3",
+  meta: {
+    lastUpdated: "2020-08-26T20:13:10.935+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Immunization?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=634da34e-ecc6-4f40-9540-909278ca28b3&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+      resource: {
+        resourceType: "Immunization",
+        id: "f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "140",
+              display: "Influenza, seasonal, injectable, preservative free"
+            }
+          ],
+          text: "Influenza, seasonal, injectable, preservative free"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/576cb260-a0bd-46c0-be6a-e726d4375fa8"
+        },
+        occurrenceDateTime: "2016-05-08T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+      resource: {
+        resourceType: "Immunization",
+        id: "8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "114",
+              display: "meningococcal MCV4P"
+            }
+          ],
+          text: "meningococcal MCV4P"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/a60e158d-a7fb-4336-b46b-8f27f925bb70"
+        },
+        occurrenceDateTime: "2010-04-18T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationStatement\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "4f4108cf-82e3-4597-8ab2-30aa3c6e5b91",
+  meta: {
+    lastUpdated: "2020-08-26T22:45:18.340+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationStatement?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=4f4108cf-82e3-4597-8ab2-30aa3c6e5b91&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68957",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68957",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">metformin 1000mg twice daily</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "411533003",
+              display: "metformin 1000mg"
+            }
+          ],
+          text: "metformin 1000mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "1 tab twice daily",
+            timing: {
+              repeat: {
+                frequency: 2,
+                period: 1,
+                periodUnit: "d"
+              }
+            }
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68960",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68960",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">prednisone 20mg 2 tabs/day</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "325456002",
+              display: "prednisone 20mg"
+            }
+          ],
+          text: "prednisone 20mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "2 tabs once daily",
+            timing: {
+              repeat: {
+                frequency: 1,
+                period: 1,
+                periodUnit: "d"
+              }
+            },
+            asNeededBoolean: true
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationRequest\(id)\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "febb4ac2-5076-4123-a6f6-a7f35d81866d",
+  meta: {
+    lastUpdated: "2020-08-26T22:21:47.953+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationRequest?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=febb4ac2-5076-4123-a6f6-a7f35d81866d&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619183",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619183",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:03:51.446+00:00",
+          source: "#YiCB0BwbDHT3gseI"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }, 
+          {
+            resourceType: "Patient",
+            id: "M12345"
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619184",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619184",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:05:32.567+00:00",
+          source: "#aRY0YhHOfJM0sa5c"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationRequest\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "febb4ac2-5076-4123-a6f6-a7f35d81866d",
+  meta: {
+    lastUpdated: "2020-08-26T22:21:47.953+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationRequest?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=febb4ac2-5076-4123-a6f6-a7f35d81866d&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619183",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619183",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:03:51.446+00:00",
+          source: "#YiCB0BwbDHT3gseI"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }, 
+          {
+            resourceType: "Patient",
+            id: "M12345"
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619184",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619184",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:05:32.567+00:00",
+          source: "#aRY0YhHOfJM0sa5c"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationStatement\(id)\_history:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "4f4108cf-82e3-4597-8ab2-30aa3c6e5b91",
+  meta: {
+    lastUpdated: "2020-08-26T22:45:18.340+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationStatement?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=4f4108cf-82e3-4597-8ab2-30aa3c6e5b91&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68957",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68957",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">metformin 1000mg twice daily</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "411533003",
+              display: "metformin 1000mg"
+            }
+          ],
+          text: "metformin 1000mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "1 tab twice daily",
+            timing: {
+              repeat: {
+                frequency: 2,
+                period: 1,
+                periodUnit: "d"
+              }
+            }
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68960",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68960",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">prednisone 20mg 2 tabs/day</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "325456002",
+              display: "prednisone 20mg"
+            }
+          ],
+          text: "prednisone 20mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "2 tabs once daily",
+            timing: {
+              repeat: {
+                frequency: 1,
+                period: 1,
+                periodUnit: "d"
+              }
+            },
+            asNeededBoolean: true
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationStatement\_search:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "4f4108cf-82e3-4597-8ab2-30aa3c6e5b91",
+  meta: {
+    lastUpdated: "2020-08-26T22:45:18.340+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationStatement?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=4f4108cf-82e3-4597-8ab2-30aa3c6e5b91&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68957",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68957",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">metformin 1000mg twice daily</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "411533003",
+              display: "metformin 1000mg"
+            }
+          ],
+          text: "metformin 1000mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "1 tab twice daily",
+            timing: {
+              repeat: {
+                frequency: 2,
+                period: 1,
+                periodUnit: "d"
+              }
+            }
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68960",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68960",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">prednisone 20mg 2 tabs/day</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "325456002",
+              display: "prednisone 20mg"
+            }
+          ],
+          text: "prednisone 20mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "2 tabs once daily",
+            timing: {
+              repeat: {
+                frequency: 1,
+                period: 1,
+                periodUnit: "d"
+              }
+            },
+            asNeededBoolean: true
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationRequest\_search:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "febb4ac2-5076-4123-a6f6-a7f35d81866d",
+  meta: {
+    lastUpdated: "2020-08-26T22:21:47.953+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationRequest?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=febb4ac2-5076-4123-a6f6-a7f35d81866d&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619183",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619183",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:03:51.446+00:00",
+          source: "#YiCB0BwbDHT3gseI"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }, 
+          {
+            resourceType: "Patient",
+            id: "M12345"
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619184",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619184",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:05:32.567+00:00",
+          source: "#aRY0YhHOfJM0sa5c"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Medication\_search:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "70462b97-d7ba-4253-ab14-c01667fc2a43",
+  meta: {
+    lastUpdated: "2020-08-26T21:57:02.363+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Medication?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=70462b97-d7ba-4253-ab14-c01667fc2a43&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619258",
+      resource: {
+        resourceType: "Medication",
+        id: "619258",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:04.377+00:00",
+          source: "#VHEqfi9swcVL50Ib",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "860975",
+              display: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+            }
+          ],
+          text: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619289",
+      resource: {
+        resourceType: "Medication",
+        id: "619289",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:05.402+00:00",
+          source: "#P8TzKWgZsdrAA60P",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "106892",
+              display: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+            }
+          ],
+          text: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/26235",
+      resource: {
+        resourceType: "Medication",
+        id: "26235",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-09-24T20:17:27.156+00:00",
+          source: "#d63bb9d8c4c20d3e"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\"> Tylenol PM </div></div>"
+        },
+        contained: [
+          {
+            resourceType: "Organization",
+            id: "org2",
+            name: "Johnson and Johnson Consume Inc, McNeil Consumer Healthcare Division"
+          }
+        ],
+        code: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/ndc",
+              code: "50580-506-02",
+              display: "Tylenol PM"
+            }
+          ]
+        },
+        manufacturer: {
+          reference: "#org2"
+        },
+        form: {
+          coding: [
+            {
+              system: "http://snomed.info/sct",
+              code: "385057009",
+              display: "Film-coated tablet (qualifier value)"
+            }
+          ]
+        },
+        ingredient: [
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "315266",
+                  display: "Acetaminophen 500 MG"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 500,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }, 
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "901813",
+                  display: "Diphenhydramine Hydrochloride 25 mg"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 25,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }
+        ],
+        batch: {
+          lotNumber: "9494788",
+          expirationDate: "2017-05-22"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Immunization\_search:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "634da34e-ecc6-4f40-9540-909278ca28b3",
+  meta: {
+    lastUpdated: "2020-08-26T20:13:10.935+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Immunization?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=634da34e-ecc6-4f40-9540-909278ca28b3&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+      resource: {
+        resourceType: "Immunization",
+        id: "f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "140",
+              display: "Influenza, seasonal, injectable, preservative free"
+            }
+          ],
+          text: "Influenza, seasonal, injectable, preservative free"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/576cb260-a0bd-46c0-be6a-e726d4375fa8"
+        },
+        occurrenceDateTime: "2016-05-08T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+      resource: {
+        resourceType: "Immunization",
+        id: "8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "114",
+              display: "meningococcal MCV4P"
+            }
+          ],
+          text: "meningococcal MCV4P"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/a60e158d-a7fb-4336-b46b-8f27f925bb70"
+        },
+        occurrenceDateTime: "2010-04-18T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Immunization\(id):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Immunization",
+  id: "imm-1",
+  meta: {
+    profile: [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+    ]
+  },
+  text: {
+    status: "generated",
+    div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: imm-1</p><p><b>meta</b>: </p><p><b>status</b>: completed</p><p><b>vaccineCode</b>: influenza, injectable, quadrivalent, contains preservative <span style=\"background: LightGoldenRodYellow\">(Details : {http://hl7.org/fhir/sid/cvx code '158' = 'influenza, injectable, quadrivalent', given as 'influenza, injectable, quadrivalent, contains preservative'}; {http://hl7.org/fhir/sid/ndc code '49281-0621-15' = '49281-0621-15', given as 'FLUZONE QUADRIVALENT'})</span></p><p><b>patient</b>: <a href=\"Patient-example.html\">Amy Shaw. Generated Summary: id: example; Medical Record Number = 1032702 (USUAL); active; Amy V. Shaw ; ph: 555-555-5555(HOME), amy.shaw@example.com; gender: female; birthDate: 2007-02-20</a></p><p><b>occurrence</b>: 08/01/2016 12:00:00 AM</p><p><b>primarySource</b>: false</p></div>"
+  },
+  status: "completed",
+  vaccineCode: {
+    coding: [
+      {
+        system: "http://hl7.org/fhir/sid/cvx",
+        code: "158",
+        display: "influenza, injectable, quadrivalent, contains preservative"
+      }, 
+      {
+        system: "http://hl7.org/fhir/sid/ndc",
+        code: "49281-0621-15",
+        display: "FLUZONE QUADRIVALENT"
+      }
+    ]
+  },
+  patient: {
+    reference: "Patient/example",
+    display: "Amy Shaw"
+  },
+  occurrenceDateTime: "2016-01-08",
+  primarySource: false
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationRequest\(id):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "MedicationRequest",
+  id: "medrx002",
+  text: {
+    status: "generated",
+    div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: medrx002</p><p><b>identifier</b>: 12345 (OFFICIAL)</p><p><b>status</b>: active</p><p><b>intent</b>: order</p><p><b>medication</b>: <a>prescribed medication</a></p><p><b>subject</b>: <a>Donald Duck</a></p><p><b>encounter</b>: <a>encounter that leads to this prescription</a></p><p><b>authoredOn</b>: 01/03/2015</p><p><b>requester</b>: <a>Patrick Pump</a></p><p><b>reasonCode</b>: Essential hypertension (disorder) <span>(Details : {SNOMED CT code '59621000' = 'Essential hypertension', given as 'Essential hypertension (disorder)'})</span></p><p><b>dosageInstruction</b>: </p></div>"
+  },
+  identifier: [
+    {
+      use: "official",
+      system: "http://www.bmc.nl/portal/prescriptions",
+      value: "12345"
+    }
+  ],
+  status: "active",
+  intent: "order",
+  medicationReference: {
+    reference: "Medication/med0316",
+    display: "prescribed medication"
+  },
+  subject: {
+    reference: "Patient/pat1",
+    display: "Donald Duck"
+  },
+  encounter: {
+    reference: "Encounter/f001",
+    display: "encounter that leads to this prescription"
+  },
+  authoredOn: "2015-03-01",
+  requester: {
+    reference: "Practitioner/f007",
+    display: "Patrick Pump"
+  },
+  reasonCode: [
+    {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "59621000",
+          display: "Essential hypertension (disorder)"
+        }
+      ]
+    }
+  ],
+  dosageInstruction: [
+    {
+      sequence: 1,
+      text: "Take one tablet daily as directed"
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationStatement\(id):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "MedicationStatement",
+  id: "example001",
+  text: {
+    status: "generated",
+    div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: example001</p><p><b>contained</b>: </p><p><b>identifier</b>: 12345689 (OFFICIAL)</p><p><b>status</b>: active</p><p><b>category</b>: Inpatient <span>(Details : {http://terminology.hl7.org/CodeSystem/medication-statement-category code 'inpatient' = 'Inpatient', given as 'Inpatient'})</span></p><p><b>medication</b>: id: med0309; Tylenol PM <span>(Details : {http://hl7.org/fhir/sid/ndc code '50580-506-02' = 'n/a', given as 'Tylenol PM'})</span>; Film-coated tablet (qualifier value) <span>(Details : {SNOMED CT code '385057009' = 'Film-coated tablet', given as 'Film-coated tablet (qualifier value)'})</span></p><p><b>subject</b>: <a>Donald Duck</a></p><p><b>effective</b>: 23/01/2015</p><p><b>dateAsserted</b>: 22/02/2015</p><p><b>informationSource</b>: <a>Donald Duck</a></p><p><b>derivedFrom</b>: <a>MedicationRequest/medrx002</a></p><p><b>reasonCode</b>: Restless Legs <span>(Details : {SNOMED CT code '32914008' = 'Restless legs', given as 'Restless Legs'})</span></p><p><b>note</b>: Patient indicates they miss the occasional dose</p><p><b>dosage</b>: </p></div>"
+  },
+  contained: [
+    {
+      resourceType: "Medication",
+      id: "med0309",
+      code: {
+        coding: [
+          {
+            system: "http://hl7.org/fhir/sid/ndc",
+            code: "50580-506-02",
+            display: "Tylenol PM"
+          }
+        ]
+      },
+      form: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: "385057009",
+            display: "Film-coated tablet (qualifier value)"
+          }
+        ]
+      },
+      ingredient: [
+        {
+          itemCodeableConcept: {
+            coding: [
+              {
+                system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                code: "315266",
+                display: "Acetaminophen 500 MG"
+              }
+            ]
+          },
+          strength: {
+            numerator: {
+              value: 500,
+              system: "http://unitsofmeasure.org",
+              code: "mg"
+            },
+            denominator: {
+              value: 1,
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "Tab"
+            }
+          }
+        }, 
+        {
+          itemCodeableConcept: {
+            coding: [
+              {
+                system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                code: "901813",
+                display: "Diphenhydramine Hydrochloride 25 mg"
+              }
+            ]
+          },
+          strength: {
+            numerator: {
+              value: 25,
+              system: "http://unitsofmeasure.org",
+              code: "mg"
+            },
+            denominator: {
+              value: 1,
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "Tab"
+            }
+          }
+        }
+      ],
+      batch: {
+        lotNumber: "9494788",
+        expirationDate: "2017-05-22"
+      }
+    }
+  ],
+  identifier: [
+    {
+      use: "official",
+      system: "http://www.bmc.nl/portal/medstatements",
+      value: "12345689"
+    }
+  ],
+  status: "active",
+  category: {
+    coding: [
+      {
+        system: "http://terminology.hl7.org/CodeSystem/medication-statement-category",
+        code: "inpatient",
+        display: "Inpatient"
+      }
+    ]
+  },
+  medicationReference: {
+    reference: "#med0309"
+  },
+  subject: {
+    reference: "Patient/pat1",
+    display: "Donald Duck"
+  },
+  effectiveDateTime: "2015-01-23",
+  dateAsserted: "2015-02-22",
+  informationSource: {
+    reference: "Patient/pat1",
+    display: "Donald Duck"
+  },
+  derivedFrom: [
+    {
+      reference: "MedicationRequest/medrx002"
+    }
+  ],
+  reasonCode: [
+    {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "32914008",
+          display: "Restless Legs"
+        }
+      ]
+    }
+  ],
+  note: [
+    {
+      text: "Patient indicates they miss the occasional dose"
+    }
+  ],
+  dosage: [
+    {
+      sequence: 1,
+      text: "1-2 tablets once daily at bedtime as needed for restless legs",
+      additionalInstruction: [
+        {
+          text: "Taking at bedtime"
+        }
+      ],
+      timing: {
+        repeat: {
+          frequency: 1,
+          period: 1,
+          periodUnit: "d"
+        }
+      },
+      asNeededCodeableConcept: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: "32914008",
+            display: "Restless Legs"
+          }
+        ]
+      },
+      route: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: "26643006",
+            display: "Oral Route"
+          }
+        ]
+      },
+      doseAndRate: [
+        {
+          "type": {
+            coding: [
+              {
+                system: "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+                code: "ordered",
+                display: "Ordered"
+              }
+            ]
+          },
+          doseRange: {
+            low: {
+              value: 1,
+              unit: "TAB",
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "TAB"
+            },
+            high: {
+              value: 2,
+              unit: "TAB",
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "TAB"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Medication\(id):fhir-r4-medications-api-config">
+        <flow-ref doc:name="implementation-medication_get-medication-by-id" doc:id="8d75be1a-fa5e-440f-9975-c54f36d9bc1b" name="implementation-medication_get-medication-by-id"/>
+    </flow>
+    <flow name="get:\Medication\(id)\_history\(vid):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="vid">attributes.uriParams.'vid'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Medication",
+  text: {
+    status: "generated",
+    div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: med0310</p><p><b>contained</b>: </p><p><b>code</b>: Oral Form Oxycodone (product) <span>(Details : {SNOMED CT code '430127000' = 'Oral form oxycodone', given as 'Oral Form Oxycodone (product)'})</span></p><p><b>form</b>: Tablet dose form (qualifier value) <span>(Details : {SNOMED CT code '385055001' = 'Tablet', given as 'Tablet dose form (qualifier value)'})</span></p><h3>Ingredients</h3><table><tr><td>-</td><td><b>Item[x]</b></td><td><b>Strength</b></td></tr><tr><td>*</td><td>id: sub03; Oxycodone (substance) <span>(Details : {SNOMED CT code '55452001' = 'Oxycodone', given as 'Oxycodone (substance)'})</span></td><td>5 mg<span> (Details: UCUM code mg = 'mg')</span>/1 TAB<span> (Details: http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm code TAB = 'Tablet')</span></td></tr></table></div>"
+  },
+  contained: [
+    {
+      resourceType: "Substance",
+      id: "sub03",
+      code: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: "55452001",
+            display: "Oxycodone (substance)"
+          }
+        ]
+      }
+    }
+  ],
+  code: {
+    coding: [
+      {
+        system: "http://snomed.info/sct",
+        code: "430127000",
+        display: "Oral Form Oxycodone (product)"
+      }
+    ]
+  },
+  form: {
+    coding: [
+      {
+        system: "http://snomed.info/sct",
+        code: "385055001",
+        display: "Tablet dose form (qualifier value)"
+      }
+    ]
+  },
+  ingredient: [
+    {
+      itemReference: {
+        reference: "#sub03"
+      },
+      strength: {
+        numerator: {
+          value: 5,
+          system: "http://unitsofmeasure.org",
+          code: "mg"
+        },
+        denominator: {
+          value: 1,
+          system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+          code: "TAB"
+        }
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Immunization\(id)\_history\(vid):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="vid">attributes.uriParams.'vid'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Immunization",
+  meta: {
+    profile: [
+      "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+    ]
+  },
+  text: {
+    status: "generated",
+    div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: imm-1</p><p><b>meta</b>: </p><p><b>status</b>: completed</p><p><b>vaccineCode</b>: influenza, injectable, quadrivalent, contains preservative <span style=\"background: LightGoldenRodYellow\">(Details : {http://hl7.org/fhir/sid/cvx code '158' = 'influenza, injectable, quadrivalent', given as 'influenza, injectable, quadrivalent, contains preservative'}; {http://hl7.org/fhir/sid/ndc code '49281-0621-15' = '49281-0621-15', given as 'FLUZONE QUADRIVALENT'})</span></p><p><b>patient</b>: <a href=\"Patient-example.html\">Amy Shaw. Generated Summary: id: example; Medical Record Number = 1032702 (USUAL); active; Amy V. Shaw ; ph: 555-555-5555(HOME), amy.shaw@example.com; gender: female; birthDate: 2007-02-20</a></p><p><b>occurrence</b>: 08/01/2016 12:00:00 AM</p><p><b>primarySource</b>: false</p></div>"
+  },
+  status: "completed",
+  vaccineCode: {
+    coding: [
+      {
+        system: "http://hl7.org/fhir/sid/cvx",
+        code: "158",
+        display: "influenza, injectable, quadrivalent, contains preservative"
+      }, 
+      {
+        system: "http://hl7.org/fhir/sid/ndc",
+        code: "49281-0621-15",
+        display: "FLUZONE QUADRIVALENT"
+      }
+    ]
+  },
+  patient: {
+    reference: "Patient/example",
+    display: "Amy Shaw"
+  },
+  occurrenceDateTime: "2016-01-08",
+  primarySource: false
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationStatement\(id)\_history\(vid):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="vid">attributes.uriParams.'vid'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "MedicationStatement",
+  text: {
+    status: "generated",
+    div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: example001</p><p><b>contained</b>: </p><p><b>identifier</b>: 12345689 (OFFICIAL)</p><p><b>status</b>: active</p><p><b>category</b>: Inpatient <span>(Details : {http://terminology.hl7.org/CodeSystem/medication-statement-category code 'inpatient' = 'Inpatient', given as 'Inpatient'})</span></p><p><b>medication</b>: id: med0309; Tylenol PM <span>(Details : {http://hl7.org/fhir/sid/ndc code '50580-506-02' = 'n/a', given as 'Tylenol PM'})</span>; Film-coated tablet (qualifier value) <span>(Details : {SNOMED CT code '385057009' = 'Film-coated tablet', given as 'Film-coated tablet (qualifier value)'})</span></p><p><b>subject</b>: <a>Donald Duck</a></p><p><b>effective</b>: 23/01/2015</p><p><b>dateAsserted</b>: 22/02/2015</p><p><b>informationSource</b>: <a>Donald Duck</a></p><p><b>derivedFrom</b>: <a>MedicationRequest/medrx002</a></p><p><b>reasonCode</b>: Restless Legs <span>(Details : {SNOMED CT code '32914008' = 'Restless legs', given as 'Restless Legs'})</span></p><p><b>note</b>: Patient indicates they miss the occasional dose</p><p><b>dosage</b>: </p></div>"
+  },
+  contained: [
+    {
+      resourceType: "Medication",
+      id: "med0309",
+      code: {
+        coding: [
+          {
+            system: "http://hl7.org/fhir/sid/ndc",
+            code: "50580-506-02",
+            display: "Tylenol PM"
+          }
+        ]
+      },
+      form: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: "385057009",
+            display: "Film-coated tablet (qualifier value)"
+          }
+        ]
+      },
+      ingredient: [
+        {
+          itemCodeableConcept: {
+            coding: [
+              {
+                system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                code: "315266",
+                display: "Acetaminophen 500 MG"
+              }
+            ]
+          },
+          strength: {
+            numerator: {
+              value: 500,
+              system: "http://unitsofmeasure.org",
+              code: "mg"
+            },
+            denominator: {
+              value: 1,
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "Tab"
+            }
+          }
+        }, 
+        {
+          itemCodeableConcept: {
+            coding: [
+              {
+                system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                code: "901813",
+                display: "Diphenhydramine Hydrochloride 25 mg"
+              }
+            ]
+          },
+          strength: {
+            numerator: {
+              value: 25,
+              system: "http://unitsofmeasure.org",
+              code: "mg"
+            },
+            denominator: {
+              value: 1,
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "Tab"
+            }
+          }
+        }
+      ],
+      batch: {
+        lotNumber: "9494788",
+        expirationDate: "2017-05-22"
+      }
+    }
+  ],
+  identifier: [
+    {
+      use: "official",
+      system: "http://www.bmc.nl/portal/medstatements",
+      value: "12345689"
+    }
+  ],
+  status: "active",
+  category: {
+    coding: [
+      {
+        system: "http://terminology.hl7.org/CodeSystem/medication-statement-category",
+        code: "inpatient",
+        display: "Inpatient"
+      }
+    ]
+  },
+  medicationReference: {
+    reference: "#med0309"
+  },
+  subject: {
+    reference: "Patient/pat1",
+    display: "Donald Duck"
+  },
+  effectiveDateTime: "2015-01-23",
+  dateAsserted: "2015-02-22",
+  informationSource: {
+    reference: "Patient/pat1",
+    display: "Donald Duck"
+  },
+  derivedFrom: [
+    {
+      reference: "MedicationRequest/medrx002"
+    }
+  ],
+  reasonCode: [
+    {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "32914008",
+          display: "Restless Legs"
+        }
+      ]
+    }
+  ],
+  note: [
+    {
+      text: "Patient indicates they miss the occasional dose"
+    }
+  ],
+  dosage: [
+    {
+      sequence: 1,
+      text: "1-2 tablets once daily at bedtime as needed for restless legs",
+      additionalInstruction: [
+        {
+          text: "Taking at bedtime"
+        }
+      ],
+      timing: {
+        repeat: {
+          frequency: 1,
+          period: 1,
+          periodUnit: "d"
+        }
+      },
+      asNeededCodeableConcept: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: "32914008",
+            display: "Restless Legs"
+          }
+        ]
+      },
+      route: {
+        coding: [
+          {
+            system: "http://snomed.info/sct",
+            code: "26643006",
+            display: "Oral Route"
+          }
+        ]
+      },
+      doseAndRate: [
+        {
+          "type": {
+            coding: [
+              {
+                system: "http://terminology.hl7.org/CodeSystem/dose-rate-type",
+                code: "ordered",
+                display: "Ordered"
+              }
+            ]
+          },
+          doseRange: {
+            low: {
+              value: 1,
+              unit: "TAB",
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "TAB"
+            },
+            high: {
+              value: 2,
+              unit: "TAB",
+              system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+              code: "TAB"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\MedicationRequest\(id)\_history\(vid):fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core">
+            <ee:variables>
+                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
+                <ee:set-variable variableName="vid">attributes.uriParams.'vid'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "MedicationRequest",
+  text: {
+    status: "generated",
+    div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><p><b>Generated Narrative with Details</b></p><p><b>id</b>: medrx002</p><p><b>identifier</b>: 12345 (OFFICIAL)</p><p><b>status</b>: active</p><p><b>intent</b>: order</p><p><b>medication</b>: <a>prescribed medication</a></p><p><b>subject</b>: <a>Donald Duck</a></p><p><b>encounter</b>: <a>encounter that leads to this prescription</a></p><p><b>authoredOn</b>: 01/03/2015</p><p><b>requester</b>: <a>Patrick Pump</a></p><p><b>reasonCode</b>: Essential hypertension (disorder) <span>(Details : {SNOMED CT code '59621000' = 'Essential hypertension', given as 'Essential hypertension (disorder)'})</span></p><p><b>dosageInstruction</b>: </p></div>"
+  },
+  identifier: [
+    {
+      use: "official",
+      system: "http://www.bmc.nl/portal/prescriptions",
+      value: "12345"
+    }
+  ],
+  status: "active",
+  intent: "order",
+  medicationReference: {
+    reference: "Medication/med0316",
+    display: "prescribed medication"
+  },
+  subject: {
+    reference: "Patient/pat1",
+    display: "Donald Duck"
+  },
+  encounter: {
+    reference: "Encounter/f001",
+    display: "encounter that leads to this prescription"
+  },
+  authoredOn: "2015-03-01",
+  requester: {
+    reference: "Practitioner/f007",
+    display: "Patrick Pump"
+  },
+  reasonCode: [
+    {
+      coding: [
+        {
+          system: "http://snomed.info/sct",
+          code: "59621000",
+          display: "Essential hypertension (disorder)"
+        }
+      ]
+    }
+  ],
+  dosageInstruction: [
+    {
+      sequence: 1,
+      text: "Take one tablet daily as directed"
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\Immunization:application\fhir+json:fhir-r4-medications-api-config">
+        <logger level="INFO" message="post:\Immunization:application\fhir+json:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="post:\Immunization:application\fhir+xml:fhir-r4-medications-api-config">
+        <logger level="INFO" message="post:\Immunization:application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="post:\Medication:application\fhir+json:fhir-r4-medications-api-config">
+		<flow-ref doc:name="implementation-medication_post-medication" doc:id="c9c6f8f0-70f0-407c-84a6-e41bc5ecb08c" name="implementation-medication_post-medication"/>
+    </flow>
+    <flow name="post:\Medication:application\fhir+xml:fhir-r4-medications-api-config">
+        <logger level="INFO" message="post:\Medication:application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="post:\MedicationRequest:application\fhir+json:fhir-r4-medications-api-config">
+        <logger level="INFO" message="post:\MedicationRequest:application\fhir+json:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="post:\MedicationRequest:application\fhir+xml:fhir-r4-medications-api-config">
+        <logger level="INFO" message="post:\MedicationRequest:application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="post:\MedicationStatement:application\fhir+json:fhir-r4-medications-api-config">
+        <logger level="INFO" message="post:\MedicationStatement:application\fhir+json:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="post:\MedicationStatement:application\fhir+xml:fhir-r4-medications-api-config">
+        <logger level="INFO" message="post:\MedicationStatement:application\fhir+xml:fhir-r4-medications-api-config" />
+    </flow>
+    <flow name="post:\Medication\_search:application\x-www-form-urlencoded:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "70462b97-d7ba-4253-ab14-c01667fc2a43",
+  meta: {
+    lastUpdated: "2020-08-26T21:57:02.363+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Medication?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=70462b97-d7ba-4253-ab14-c01667fc2a43&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619258",
+      resource: {
+        resourceType: "Medication",
+        id: "619258",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:04.377+00:00",
+          source: "#VHEqfi9swcVL50Ib",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "860975",
+              display: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+            }
+          ],
+          text: "24 HR Metformin hydrochloride 500 MG Extended Release Oral Tablet"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/619289",
+      resource: {
+        resourceType: "Medication",
+        id: "619289",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T18:26:05.402+00:00",
+          source: "#P8TzKWgZsdrAA60P",
+          profile: [
+            "http://standardhealthrecord.org/fhir/StructureDefinition/shr-medication-Medication"
+          ]
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\">insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]</div></div>"
+        },
+        code: {
+          coding: [
+            {
+              system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+              code: "106892",
+              display: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+            }
+          ],
+          text: "insulin human, isophane 70 UNT/ML / Regular Insulin, Human 30 UNT/ML Injectable Suspension [Humulin]"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Medication/26235",
+      resource: {
+        resourceType: "Medication",
+        id: "26235",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-09-24T20:17:27.156+00:00",
+          source: "#d63bb9d8c4c20d3e"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\"><div class=\"hapiHeaderText\"> Tylenol PM </div></div>"
+        },
+        contained: [
+          {
+            resourceType: "Organization",
+            id: "org2",
+            name: "Johnson and Johnson Consume Inc, McNeil Consumer Healthcare Division"
+          }
+        ],
+        code: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/ndc",
+              code: "50580-506-02",
+              display: "Tylenol PM"
+            }
+          ]
+        },
+        manufacturer: {
+          reference: "#org2"
+        },
+        form: {
+          coding: [
+            {
+              system: "http://snomed.info/sct",
+              code: "385057009",
+              display: "Film-coated tablet (qualifier value)"
+            }
+          ]
+        },
+        ingredient: [
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "315266",
+                  display: "Acetaminophen 500 MG"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 500,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }, 
+          {
+            itemCodeableConcept: {
+              coding: [
+                {
+                  system: "http://www.nlm.nih.gov/research/umls/rxnorm",
+                  code: "901813",
+                  display: "Diphenhydramine Hydrochloride 25 mg"
+                }
+              ]
+            },
+            strength: {
+              numerator: {
+                value: 25,
+                system: "http://unitsofmeasure.org",
+                code: "mg"
+              },
+              denominator: {
+                value: 1,
+                system: "http://terminology.hl7.org/CodeSystem/v3-orderableDrugForm",
+                code: "Tab"
+              }
+            }
+          }
+        ],
+        batch: {
+          lotNumber: "9494788",
+          expirationDate: "2017-05-22"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\MedicationRequest\_search:application\x-www-form-urlencoded:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "febb4ac2-5076-4123-a6f6-a7f35d81866d",
+  meta: {
+    lastUpdated: "2020-08-26T22:21:47.953+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationRequest?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=febb4ac2-5076-4123-a6f6-a7f35d81866d&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619183",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619183",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:03:51.446+00:00",
+          source: "#YiCB0BwbDHT3gseI"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }, 
+          {
+            resourceType: "Patient",
+            id: "M12345"
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationRequest/619184",
+      resource: {
+        resourceType: "MedicationRequest",
+        id: "619184",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-02-11T09:05:32.567+00:00",
+          source: "#aRY0YhHOfJM0sa5c"
+        },
+        contained: [
+          {
+            resourceType: "Medication",
+            id: "162609",
+            code: {
+              coding: [
+                {
+                  system: "http://www.whocc.no/atc",
+                  code: "J05AG01",
+                  display: "NEVIRAPINE"
+                }
+              ],
+              text: "NEVIRAPINE TABLET MGA 400MG"
+            }
+          }
+        ],
+        status: "completed",
+        intent: "order",
+        medicationReference: {
+          reference: "#162609"
+        },
+        subject: {
+          reference: "#M12345"
+        },
+        dosageInstruction: [
+          {
+            text: "10 drops four times daily - apply in mouth using cotton swab or finger",
+            route: {
+              coding: [
+                {
+                  code: "12345",
+                  display: "ORAAL"
+                }
+              ],
+              text: "ORAAL"
+            },
+            doseAndRate: [
+              {
+                doseQuantity: {
+                  value: 10,
+                  unit: "mg",
+                  code: "12346"
+                }
+              }
+            ]
+          }
+        ],
+        dispenseRequest: {
+          validityPeriod: {
+            start: "2015-01-15",
+            end: "2016-01-15"
+          }
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\Immunization\_search:application\x-www-form-urlencoded:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "634da34e-ecc6-4f40-9540-909278ca28b3",
+  meta: {
+    lastUpdated: "2020-08-26T20:13:10.935+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/Immunization?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=634da34e-ecc6-4f40-9540-909278ca28b3&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+      resource: {
+        resourceType: "Immunization",
+        id: "f705b7c7-8e4c-492a-97dc-6b7b70ed6424",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "140",
+              display: "Influenza, seasonal, injectable, preservative free"
+            }
+          ],
+          text: "Influenza, seasonal, injectable, preservative free"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/576cb260-a0bd-46c0-be6a-e726d4375fa8"
+        },
+        occurrenceDateTime: "2016-05-08T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/Immunization/8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+      resource: {
+        resourceType: "Immunization",
+        id: "8f8b99bb-7408-41ed-8331-ed8ebe596d76",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2020-03-24T23:13:00.764+00:00",
+          source: "#aVhvszYHVKBF7PAc",
+          profile: [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization"
+          ],
+          tag: [
+            {
+              system: "https://smarthealthit.org/tags",
+              code: "Covid19 synthetic population from Synthea"
+            }
+          ]
+        },
+        status: "completed",
+        vaccineCode: {
+          coding: [
+            {
+              system: "http://hl7.org/fhir/sid/cvx",
+              code: "114",
+              display: "meningococcal MCV4P"
+            }
+          ],
+          text: "meningococcal MCV4P"
+        },
+        patient: {
+          reference: "Patient/07eda4a2-1d0e-45e5-9324-b2d4b9c36598"
+        },
+        encounter: {
+          reference: "Encounter/a60e158d-a7fb-4336-b46b-8f27f925bb70"
+        },
+        occurrenceDateTime: "2010-04-18T01:24:01-05:00",
+        primarySource: true,
+        location: {
+          reference: "Location/07de4705-3f94-49f4-81d7-79d276171e5a",
+          display: "PCP190938"
+        }
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\MedicationStatement\_search:application\x-www-form-urlencoded:fhir-r4-medications-api-config">
+        <ee:transform xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  resourceType: "Bundle",
+  id: "4f4108cf-82e3-4597-8ab2-30aa3c6e5b91",
+  meta: {
+    lastUpdated: "2020-08-26T22:45:18.340+00:00"
+  },
+  "type": "searchset",
+  link: [
+    {
+      relation: "self",
+      url: "http://hapi.fhir.org/baseR4/MedicationStatement?_pretty=true"
+    }, 
+    {
+      relation: "next",
+      url: "http://hapi.fhir.org/baseR4?_getpages=4f4108cf-82e3-4597-8ab2-30aa3c6e5b91&_getpagesoffset=20&_count=20&_pretty=true&_bundletype=searchset"
+    }
+  ],
+  entry: [
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68957",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68957",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">metformin 1000mg twice daily</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "411533003",
+              display: "metformin 1000mg"
+            }
+          ],
+          text: "metformin 1000mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "1 tab twice daily",
+            timing: {
+              repeat: {
+                frequency: 2,
+                period: 1,
+                periodUnit: "d"
+              }
+            }
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }, 
+    {
+      fullUrl: "http://hapi.fhir.org/baseR4/MedicationStatement/68960",
+      resource: {
+        resourceType: "MedicationStatement",
+        id: "68960",
+        meta: {
+          versionId: "1",
+          lastUpdated: "2019-11-16T16:51:34.430+00:00",
+          source: "#YhUwoSvGD1ycttYD"
+        },
+        text: {
+          status: "generated",
+          div: "<div xmlns=\"http://www.w3.org/1999/xhtml\">prednisone 20mg 2 tabs/day</div>"
+        },
+        status: "active",
+        medicationCodeableConcept: {
+          coding: [
+            {
+              system: "http://snomed.info/ct",
+              code: "325456002",
+              display: "prednisone 20mg"
+            }
+          ],
+          text: "prednisone 20mg"
+        },
+        subject: {
+          reference: "Patient/68894"
+        },
+        dosage: [
+          {
+            text: "2 tabs once daily",
+            timing: {
+              repeat: {
+                frequency: 1,
+                period: 1,
+                periodUnit: "d"
+              }
+            },
+            asNeededBoolean: true
+          }
+        ]
+      },
+      search: {
+        mode: "match"
+      }
+    }
+  ]
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+</mule>

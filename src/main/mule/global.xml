@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+	xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite"
+	xmlns:hl7="http://www.mulesoft.org/schema/mule/hl7"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties"
+	xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd 
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd 
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/hl7 http://www.mulesoft.org/schema/mule/hl7/current/mule-hl7.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+
+	<http:listener-config name="fhir-r4-medication-api-httpListenerConfig">
+        <http:listener-connection host="${http.host}" port="${http.port}" />
+    </http:listener-config>
+
+    <apikit:config name="fhir-r4-medications-api-config" api="resource::dfb8ffc8-d878-4ae3-a4ad-7d2c4424f95a:fhir-r4-medications-api:1.0.1:raml:zip:fhir-r4-medications-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+		
+    <global-property doc:name="Global Property Mule Env"
+		doc:id="635cba40-b83c-4ce3-b0a8-fd3a5ab4b62b" name="mule.env"
+		value="local" />
+	<secure-properties:config
+		name="Secure_Properties_Config" doc:name="Secure Properties Config"
+		doc:id="c42279e1-18a7-4ae7-b896-4ea61271f72d"
+		file="config/config-secured-${mule.env}.yaml" key="${mule.key}">
+		<secure-properties:encrypt
+			algorithm="Blowfish" />
+	</secure-properties:config>
+	<configuration-properties
+		doc:name="Configuration properties env file"
+		doc:id="0d5ac391-3407-4043-a2d9-e74eef9ee00d"
+		file="config/config-${mule.env}.yaml" />
+	<global-property doc:name="Global Property Mule Key"
+		doc:id="0f7dedff-3e84-4c2c-977d-36b736847692" name="mule.key"
+		value="mulesoft" />
+	<salesforce-composite:composite-config
+		name="Salesforce_Composite_Config"
+		doc:name="Salesforce Composite Config"
+		doc:id="6635633b-23bf-4120-81b1-4bd830aa1fba">
+		<salesforce-composite:oauth-user-pass-connection
+			consumerKey="${salesforce.consumerKey}"
+			consumerSecret="${secure::salesforce.consumerSecret}"
+			username="${salesforce.username}"
+			password="${secure::salesforce.password}" responseTimeout="60">
+			<reconnection>
+				<reconnect />
+			</reconnection>
+		</salesforce-composite:oauth-user-pass-connection>
+	</salesforce-composite:composite-config>
+	<salesforce:sfdc-config name="Salesforce_Config"
+		doc:name="Salesforce Config"
+		doc:id="2d46592e-e36a-4048-8b8b-eff746cb7056" readTimeout="120">
+		<salesforce:basic-connection
+			username="${salesforce.username}"
+			password="${secure::salesforce.password}" url="${salesforce.url}">
+			<reconnection>
+				<reconnect />
+			</reconnection>
+		</salesforce:basic-connection>
+	</salesforce:sfdc-config>
+	<validation:config name="Validation_Config"
+		doc:name="Validation Config"
+		doc:id="6d360271-31df-48ec-9a0f-9aff1182b005" />
+	<os:object-store name="Object_store" doc:name="Object store" doc:id="2b981581-4d65-4d5c-a73a-9a9475aa5d84" maxEntries="100" entryTtl="30" entryTtlUnit="DAYS" expirationInterval="30" expirationIntervalUnit="DAYS" config-ref="ObjectStore_Config"/>
+	<os:config name="ObjectStore_Config" doc:name="ObjectStore Config" doc:id="6f125927-2b4b-4fef-a292-cf7379fa5bb8" />
+</mule>

@@ -1,0 +1,284 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>dfb8ffc8-d878-4ae3-a4ad-7d2c4424f95a</groupId>
+	<artifactId>hc-accelerator-sfdc-us-core-medications-sys-api</artifactId>
+    <version>1.0.0</version>
+    <packaging>mule-application</packaging>
+
+	<name>hc-accelerator-sfdc-us-core-medications-sys-api</name>
+	<description>Health Cloud Medication System API - Implementation Template</description>
+
+    <properties>
+		<groupId>com.mulesoft.accelerator-healthcare</groupId>
+		<mule.classifier>mule-application-template</mule.classifier>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<app.runtime>4.3.0</app.runtime>
+		<mule.maven.plugin.version>3.4.0</mule.maven.plugin.version>
+		<munit.version>2.2.5</munit.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.mule.tools.maven</groupId>
+				<artifactId>mule-maven-plugin</artifactId>
+				<version>${mule.maven.plugin.version}</version>
+				<extensions>true</extensions>
+				<configuration>
+					<cloudHubDeployment>
+						<server>haccelerator</server>
+						<uri>https://anypoint.mulesoft.com</uri>
+						<muleVersion>${app.runtime}</muleVersion>
+						<applicationName>${cloudhub.appName}</applicationName>
+						<environment>${cloudhub.environment}</environment>
+						<businessGroupId>${cloudhub.businessGroupId}</businessGroupId>
+						<workers>${cloudhub.workers}</workers>
+						<workerType>${cloudhub.workerType}</workerType>
+						<deploymentTimeout>${cloudhub.deploymentTimeout}</deploymentTimeout>
+						<region>${cloudhub.region}</region>
+						<objectStoreV2>true</objectStoreV2>
+						<applyLatestRuntimePatch>true</applyLatestRuntimePatch>
+						<properties>
+							<mule.env>${mule.env}</mule.env>
+							<mule.key>${mule.key}</mule.key>
+							<anypoint.platform.client_id>${anypoint.platform.client_id}</anypoint.platform.client_id>
+							<anypoint.platform.client_secret>${anypoint.platform.client_secret}</anypoint.platform.client_secret>
+							<anypoint.platform.visualizer.layer>${anypoint.platform.visualizer.layer}</anypoint.platform.visualizer.layer>
+							<anypoint.platform.visualizer.tags>${anypoint.platform.visualizer.tags}</anypoint.platform.visualizer.tags>
+							<anypoint.platform.config.analytics.agent.enabled>true</anypoint.platform.config.analytics.agent.enabled>
+						</properties>
+					</cloudHubDeployment>
+					<classifier>mule-application</classifier>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.mulesoft.munit.tools</groupId>
+				<artifactId>munit-maven-plugin</artifactId>
+				<version>${munit.version}</version>
+				<executions>
+					<execution>
+						<id>test</id>
+						<phase>test</phase>
+						<goals>
+							<goal>test</goal>
+							<goal>coverage-report</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<coverage>
+						<runCoverage>true</runCoverage>
+						<formats>
+							<format>html</format>
+						</formats>
+					</coverage>
+				</configuration>
+			</plugin>
+			<!-- 
+			Knit Documentation Plugin
+			Uncomment this plugin to build the documentation 
+			from source DW code.
+			 -->
+			<!-- 
+			<plugin>
+			    <groupId>997d5e99-287f-4f68-bc95-ed435d7c5797</groupId>
+			    <artifactId>knit-maven-plugin</artifactId>
+			    <version>2.0.3</version>
+			    <executions>
+			        <execution>
+			            <goals>
+			                <goal>knit</goal>
+			            </goals>
+			        </execution>
+			    </executions>
+			    <configuration>
+        			<skip>false</skip>
+			    	<outputFile>README-DEV.md</outputFile>
+			        <files>
+			            <file>src/main/resources/dw/Patient/PatientFHIRTools.dwl</file>
+			            <file>src/main/resources/dw/Patient/PatientRequest.dwl</file>
+			            <file>src/main/resources/dw/Location/LocationFHIRTools.dwl</file>
+			            <file>src/main/resources/dw/Location/LocationRequest.dwl</file>
+			            <file>src/main/resources/dw/Practitioner/PractitionerFHIRTools.dwl</file>
+			            <file>src/main/resources/dw/Practitioner/PractitionerRequest.dwl</file>
+			            <file>src/main/resources/dw/Organization/OrganizationFHIRTools.dwl</file>
+			            <file>src/main/resources/dw/Organization/OrganizationRequest.dwl</file>
+			            <file>src/main/resources/dw/Encounter/encounterfhirtools.dwl</file>
+			            <file>src/main/resources/dw/Encounter/encounterRequest.dwl</file>
+			            <file>src/main/resources/dw/PractitionerRole/PractitionerRoleFHIRTools.dwl</file>
+			            <file>src/main/resources/dw/PractitionerRole/PractitionerRoleRequest.dwl</file>
+			            <file>src/main/resources/dw/relatedperson/RelatedPersonFHIRTools.dwl</file>
+			            <file>src/main/resources/dw/relatedperson/RelatedPersonRequest.dwl</file>
+			            <file>src/main/resources/dw/Util.dwl</file>
+			        </files>
+			        <writeHeaderTable>true</writeHeaderTable>
+			          <moduleList>
+			              <module>PatientFHIRTools</module>
+			              <module>PatientRequest</module>
+			              <module>LocationFHIRTools</module>
+			              <module>LocationRequest</module>
+			              <module>PractitionerFHIRTools</module>
+			              <module>PractitionerRequest</module>
+			              <module>OrganizationFHIRTools</module>
+			              <module>OrganizationRequest</module>
+			              <module>encounterfhirtools</module>
+			              <module>encounterRequest</module>
+			              <module>PractitionerRoleFHIRTools</module>
+			              <module>PractitionerRoleRequest</module>
+			              <module>RelatedPersonFHIRTools</module>
+			              <module>RelatedPersonRequest</module>
+			              <module>Util</module>
+			          </moduleList>
+			        <outputHeaderText>
+<![CDATA[
+# Administration Dev Guide
+
+The US-Core Administratoin application uses the following DataWeave modules to map between HealthCloud and FHIR formats.
+
+]]>
+          			</outputHeaderText>
+			    </configuration>
+			</plugin>
+			-->
+			<plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <configuration>
+                	<source>1.7</source> 
+      				<target>1.7</target> 
+                    <compilerArgs>
+                        <args>-parameters</args>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-http-connector</artifactId>
+            <version>1.5.23</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-sockets-connector</artifactId>
+            <version>1.2.0</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+		<dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-apikit-module</artifactId>
+            <version>1.4.1</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+		<dependency>
+            <groupId>com.mulesoft.modules</groupId>
+            <artifactId>mule-secure-configuration-property-module</artifactId>
+            <version>1.2.3</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>com.mulesoft.connectors</groupId>
+            <artifactId>mule-salesforce-composite-connector</artifactId>
+            <version>2.8.0</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>com.mulesoft.munit</groupId>
+            <artifactId>munit-tools</artifactId>
+            <version>2.3.1</version>
+            <classifier>mule-plugin</classifier>
+            <scope>test</scope>
+        </dependency>
+    	<dependency>
+            <groupId>org.mule.modules</groupId>
+            <artifactId>mule-validation-module</artifactId>
+            <version>1.4.2</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>com.mulesoft.connectors</groupId>
+            <artifactId>mule-salesforce-connector</artifactId>
+            <version>10.9.1</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+    	<dependency>
+            <groupId>com.mulesoft.munit</groupId>
+            <artifactId>munit-runner</artifactId>
+            <version>2.3.1</version>
+            <classifier>mule-plugin</classifier>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mule.connectors</groupId>
+            <artifactId>mule-objectstore-connector</artifactId>
+            <version>1.1.6</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        
+        <!-- https://mvnrepository.com/artifact/log4j/log4j -->
+		<dependency>
+		    <groupId>log4j</groupId>
+		    <artifactId>log4j</artifactId>
+		    <version>1.2.17</version>
+		</dependency>
+    	<dependency>
+            <groupId>org.mule.module</groupId>
+            <artifactId>mule-java-module</artifactId>
+            <version>1.2.7</version>
+            <classifier>mule-plugin</classifier>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/ca.uhn.hapi.fhir/hapi-fhir-base -->
+		<dependency>
+		    <groupId>ca.uhn.hapi.fhir</groupId>
+		    <artifactId>hapi-fhir-base</artifactId>
+		    <version>5.2.1</version>
+		</dependency>
+		<!-- https://mvnrepository.com/artifact/ca.uhn.hapi.fhir/hapi-fhir-validation -->
+		<dependency>
+		    <groupId>ca.uhn.hapi.fhir</groupId>
+		    <artifactId>hapi-fhir-validation</artifactId>
+		    <version>5.2.1</version>
+		</dependency>
+        <dependency>
+            <groupId>dfb8ffc8-d878-4ae3-a4ad-7d2c4424f95a</groupId>
+            <artifactId>fhir-r4-medications-api</artifactId>
+            <version>1.0.1</version>
+            <classifier>raml</classifier>
+            <type>zip</type>
+        </dependency>
+    </dependencies>
+
+	<repositories>
+          <repository>
+            <id>anypoint-exchange-v2</id>
+            <name>Anypoint Exchange</name>
+            <url>https://maven.anypoint.mulesoft.com/api/v2/maven</url>
+            <layout>default</layout>
+        </repository>
+        <repository>
+            <id>mulesoft-releases</id>
+            <name>MuleSoft Releases Repository</name>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>mulesoft-releases</id>
+            <name>mulesoft release repository</name>
+            <layout>default</layout>
+            <url>https://repository.mulesoft.org/releases/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </pluginRepository>
+    </pluginRepositories>
+
+</project>
