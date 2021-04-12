@@ -4,8 +4,8 @@ output application/json skipNullOn="everywhere"
 import dw::Medication::fhirtools
 ---
 
-(vars.acc_medicationRLUwithCodeSetValues map (item, index) -> using (i = item) 
- 	 
-	fhirtools::getResponse(item, vars.unitOfMeasure_QuantityUnitIdLU, vars.manufacturerIdLU)
+(flatten (vars.acc_medicationRLUwithCodeSetValues) map (item, index) -> // using (i = item) 
+	
+	fhirtools::getResponse(item)	
 
 )[0]
