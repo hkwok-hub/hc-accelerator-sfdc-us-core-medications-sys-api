@@ -1,0 +1,741 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd">
+	<sub-flow name="common-medicationrequest_reverse-lookup-query-processes" doc:id="26c19767-3043-45dc-909d-b9d04be534cf">
+		<salesforce:query doc:name="Reverse Lookup ClinicalMedicationIdentifier" doc:id="5ed1fd56-b205-4a9e-a9f1-a56546c53e23" config-ref="Salesforce_Config" target="medicationRLU">
+			<salesforce:salesforce-query><![CDATA[SELECT 
+CreatedById,
+CreatedDate,
+Id,
+IsDeleted,
+IsLocked,
+LastModifiedById,
+LastModifiedDate,
+LastReferencedDate,
+LastViewedDate,
+ManufacturerId,
+MayEdit,
+MedicationCodeId,
+MedicationFormId,
+Name,
+OwnerId,
+QuantityDenominator,
+QuantityNumerator,
+QuantityUnitId,
+SourceSystem,
+SourceSystemIdentifier,
+SourceSystemModified,
+Status,
+(select id, 
+ParentRecordId, 
+IdValue,
+Name,
+IdUsageType,
+IdTypeId,
+SourceSystem from Identifiers) 
+FROM Medication
+WHERE :Id]]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[output application/java --- { "Id" : vars.whereClause default "" }]]]></salesforce:parameters>
+		</salesforce:query>
+		<logger level="INFO" doc:name="Reverse Lookup completed" doc:id="fa2d612c-a916-4a09-a867-4d6ebfe930fb" message="Reverse Lookup completed" category="${hc.logger.package}" />
+	</sub-flow>
+	<sub-flow name="common-medicationrequest_lookup-query-processes" doc:id="26c0af92-8de6-4b13-bafe-14cd8d554041">
+		<scatter-gather doc:name="Lookup Processes" doc:id="f015150b-c0e5-43fa-8a68-8a662f908f18">
+			<route>
+				<salesforce:query doc:name="Lookup Account for ManufacturerId" doc:id="07e21981-d610-40ff-928b-b10a0320d2b8" config-ref="Salesforce_Config" target="manufacturerIdLU">
+					<salesforce:salesforce-query><![CDATA[SELECT 
+AccountNumber,
+id
+FROM Account
+WHERE Id=':Id']]></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[output application/java --- { "Id" : vars.medication[vars.enocunterCounter-1].ManufacturerId default "" }]]]></salesforce:parameters>
+				</salesforce:query>
+			</route>
+			<route>
+				<salesforce:query doc:name="Lookup UnitOfMeasure for QuantityUnitId" doc:id="5b2b620d-721d-43d9-bf61-8b3784e67a29" config-ref="Salesforce_Config" target="unitOfMeasure_QuantityUnitIdLU">
+					<salesforce:salesforce-query><![CDATA[SELECT  
+Name,
+UnitCode,
+id
+FROM UnitOfMeasure
+WHERE Id=':Id']]></salesforce:salesforce-query>
+					<salesforce:parameters><![CDATA[#[output application/java --- { "Id" : vars.medication[vars.enocunterCounter-1].QuantityUnitId default "" }]]]></salesforce:parameters>
+				</salesforce:query>
+			</route>
+		</scatter-gather>
+		<logger level="INFO" doc:name="Lookup completed" doc:id="25ff9f3f-b6cf-4a9a-80e5-ceab44b163ee" message="Lookup completed" category="${hc.logger.package}" />
+	</sub-flow>
+	<sub-flow name="common-medicationrequest_lookup-query-codeset" doc:id="97534bf3-ddc5-4759-947c-1c0ffed9adbe">
+		<ee:transform doc:name="codeSetBundleQueryStr" doc:id="9c85cefd-4732-4a3d-9e36-ff359eea43c1">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="codeSetBundleQueryStr"><![CDATA[%dw 2.0
+output application/json
+ 
+/*"(" ++ ((vars.medicationRLU[vars.enocunterCounter-1].MedicationCodeId default [''] map ("'" ++ $ ++"'")) joinBy ",") ++ "," 
+	++ ((vars.medicationRLU[vars.enocunterCounter-1].Identifiers..IdTypeId default [''] map ("'" ++ $ ++"'")) joinBy ",") ++ ","
+         ++ ((vars.medicationRLU[vars.enocunterCounter-1].MedicationFormId default [''] map ("'" ++ $ ++"'")) joinBy ",") ++
+         ")" 
+*/         
+ var queryStr = (([] ++ [(vars.medicationRLU[vars.enocunterCounter-1].MedicationCodeId default [] )] 
+	++ (vars.medicationRLU[vars.enocunterCounter-1].Identifiers..IdTypeId default [])
+	++ [(vars.medicationRLU[vars.enocunterCounter-1].MedicationFormId default [])]
+	) filter ($ != null) map ("'" ++ $ ++"'") joinBy ",") 
+---
+
+"(" ++         
+(if (!isEmpty(queryStr)) 
+	queryStr
+else
+	"''")
+++ ")"
+         ]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<salesforce:query doc:name=" Lookup CodeSetBundle" doc:id="0ad10c56-f529-4943-a8b7-5d758d04edf9" config-ref="Salesforce_Config" target="medicationCSBLU">
+			<salesforce:salesforce-query><![CDATA[SELECT 
+CodeSet1Id,
+CodeSet2Id,
+CodeSet3Id,
+CodeSet4Id,
+CodeSet5Id,
+CodeSet6Id,
+CodeSet7Id,
+CodeSet8Id,
+CodeSet9Id,
+CodeSet10Id,
+CodeSet11Id,
+CodeSet12Id,
+CodeSet13Id,
+CodeSet14Id,
+CodeSet15Id,
+CodeSetBundleKey,
+CreatedById,
+CreatedDate,
+Id,
+IsDeleted,
+IsLocked,
+LastModifiedById,
+LastModifiedDate,
+LastReferencedDate,
+LastViewedDate,
+MayEdit,
+Name,
+OwnerId,
+SystemModstamp 
+FROM CodeSetBundle
+WHERE Id in :Id]]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[output application/java --- { "Id" : vars.codeSetBundleQueryStr default "" }]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="codeSet1Id" doc:id="98767ed3-d501-45e8-9f4d-b97282206039">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="codeSetIds"><![CDATA[%dw 2.0
+output application/json
+---
+
+	flatten (vars.medicationCSBLU map (cs, csIndex) ->
+		
+			[cs.CodeSet1Id, cs.CodeSet2Id, cs.CodeSet3Id, cs.CodeSet4Id ]
+		
+	) filter ($ != null)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="codeSetQueryStr" doc:id="1ad9297f-d362-4370-a890-7de7b074e890">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="codeSetQueryStr"><![CDATA[%dw 2.0
+output application/json
+
+var queryStr = ((vars.codeSetIds default [''] map ("'" ++ $ ++"'")) joinBy ",") 
+---
+"(" ++         
+(if (!isEmpty(queryStr)) 
+	queryStr
+else
+	"''")
+++ ")"
+
+ ]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<salesforce:query doc:name="Lookup CodeSet" doc:id="ac3a9eab-a719-4829-ba92-264b3233a6b6" config-ref="Salesforce_Config" target="medicationCodeSetLU">
+			<salesforce:salesforce-query><![CDATA[SELECT 
+Code,
+CodeDescription,
+CodeSetKey,
+CodeSetType,
+CreatedById,
+CreatedDate,
+EndDate,
+Id,
+IsActive,
+IsCustomCode,
+IsDeleted,
+IsLocked,
+IsPrimary,
+LastModifiedById,
+LastModifiedDate,
+LastReferencedDate,
+LastViewedDate,
+MayEdit,
+Name,
+OwnerId,
+SourceSystem,
+StartDate,
+SystemModstamp,
+SystemVersion 
+FROM CodeSet
+WHERE (Id in :Id)]]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[output application/java --- { "Id" : vars.codeSetQueryStr default "" }]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="medicationRLUwithCodeSetValues" doc:id="fbcef954-1046-4252-b754-00aab688a8fb">
+			<ee:message />
+			<ee:variables>
+				<ee:set-variable variableName="medicationRLUwithCodeSetValues"><![CDATA[output application/json 
+
+var eRLU = vars.medicationRLU[vars.enocunterCounter-1] 
+--- 
+
+
+(   eRLU ++ 
+    
+    {
+        
+    // MedicationCodeId 
+    (vars.medicationCSBLU filter ($.Id == eRLU.MedicationCodeId ) map (eCSBLU, eRLUIndex) -> {
+            (MedicationCodeIdCodeSetBundle: eCSBLU),
+             MedicationCodeIdCodeSets:[]
+            // MedicationCodeId 
+            ++ (vars.medicationCodeSetLU filter ((eCSBLU.CodeSet1Id == $.Id) or (eCSBLU.CodeSet2Id == $.Id) 
+                or (eCSBLU.CodeSet3Id == $.Id) or (eCSBLU.CodeSet4Id == $.Id)) map (eCodeSetLU, eCodeSetLUIndex) -> {
+                (eCodeSetLU)
+            })
+    }),     
+        
+    // MedicationFormId 
+    (vars.medicationCSBLU filter ($.Id == eRLU.MedicationFormId ) map (eCSBLU, eRLUIndex) -> {
+            (MedicationFormIdCodeSetBundle: eCSBLU),
+             MedicationFormIdCodeSets:[]
+            // MedicationFormId 
+            ++ (vars.medicationCodeSetLU filter ((eCSBLU.CodeSet1Id == $.Id) or (eCSBLU.CodeSet2Id == $.Id) 
+                or (eCSBLU.CodeSet3Id == $.Id) or (eCSBLU.CodeSet4Id == $.Id)) map (eCodeSetLU, eCodeSetLUIndex) -> {
+                (eCodeSetLU)
+            })
+    }),
+
+    // QuantityUnitId   
+    (vars.medicationCSBLU filter ($.Id == eRLU.QuantityUnitId ) map (eCSBLU, eRLUIndex) -> {
+            (QuantityUnitIdCodeSetBundle: eCSBLU),
+             QuantityUnitIdCodeSets:[]
+            // QuantityUnitId 
+            ++ (vars.medicationCodeSetLU filter ((eCSBLU.CodeSet1Id == $.Id) or (eCSBLU.CodeSet2Id == $.Id) 
+                or (eCSBLU.CodeSet3Id == $.Id) or (eCSBLU.CodeSet4Id == $.Id)) map (eCodeSetLU, eCodeSetLUIndex) -> {
+                (eCodeSetLU)
+            })
+    }),
+
+    // Clinical_Encounter_Identifiers Type
+    "IdentifierstBundle": 
+    (eRLU..IdTypeId map (rCodeId, rCodeIdIndex) ->
+        {         
+          (vars.medicationCSBLU filter ($.Id == rCodeId ) map (eCSBLU, eRLUIndex) ->
+          {
+            (eCSBLU),
+            IdentifiersCodeSets:[]
+            // Identifiers 
+            ++ (vars.medicationCodeSetLU filter ((eCSBLU.CodeSet1Id == $.Id) or (eCSBLU.CodeSet2Id == $.Id) 
+                or (eCSBLU.CodeSet3Id == $.Id) or (eCSBLU.CodeSet4Id == $.Id)) map (eCodeSetLU, eCodeSetLUIndex) -> {
+                (eCodeSetLU)
+            })
+          })
+         
+         }
+    
+    ), 
+
+    }
+     
+)]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Codeset Lookup completed" doc:id="28bda6f4-617b-41c3-bd81-c5f271b1dbac" message="Codeset Lookup completed" category="${hc.logger.package}" />
+	</sub-flow>
+	<sub-flow name="common-medicationrequest_upsert-medication-object" doc:id="3396f078-2bf2-4303-a6ae-4a9f280338e8" >
+		<ee:transform doc:name="Create upsert medication request" doc:id="5782d78b-af8a-4d2a-bd38-c6cccf7c4545" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable resource="dw/Medication/resource-upsert-request.dwl" variableName="medicationUpsertRequest" />
+			</ee:variables>
+		</ee:transform>
+		<salesforce-composite:execute-composite-request doc:name="Insert medication record" doc:id="13479bcb-7ba7-478c-a772-757883f0736e" config-ref="Salesforce_Composite_Config" target="response">
+			<salesforce-composite:request-body ><![CDATA[#[vars.medicationUpsertRequest]]]></salesforce-composite:request-body>
+		</salesforce-composite:execute-composite-request>
+		<flow-ref doc:name="common-medicationrequest_check-upsert-medication-response" doc:id="116d27e4-9e1c-4ec8-afc9-262aa3b1c428" name="common-medicationrequest_check-upsert-medication-response"/>
+	</sub-flow>
+	<flow name="common-medicationrequest_upsert-lookup" doc:id="6c7d57d6-26c1-4be8-abc8-09946fd0617e" >
+		<scatter-gather doc:name="Scatter-Gather" doc:id="df102261-909d-4be5-ac30-4032d6843d9e" >
+			<route >
+				<salesforce:query doc:name="Lookup UnitOfMeasure for QuantityUnitId" doc:id="da607069-49c2-4588-97ca-6ee507839c31" config-ref="Salesforce_Config" target="unitOfMeasureLU">
+			<salesforce:salesforce-query><![CDATA[SELECT  
+Name,
+UnitCode,
+id
+FROM UnitOfMeasure
+WHERE UnitCode=':Id']]></salesforce:salesforce-query>
+			<salesforce:parameters><![CDATA[#[output application/java --- { "Id" : vars.medicationRequest.amount.denominator.unit default "" }]]]></salesforce:parameters>
+		</salesforce:query>
+				<choice doc:name="Choice" doc:id="9410e4d9-919d-416e-8b6e-f2289a2e6969" >
+					<when expression="#[(sizeOf(vars.unitOfMeasureLU) == 0) and !isEmpty(vars.medicationRequest.amount.denominator.unit)]">
+						<ee:transform doc:name="Create UnitOfMeasure Upsert Request" doc:id="ed2caa01-b33b-41e6-bc53-a8afd9ba621c">
+					<ee:message>
+						<ee:set-payload><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+
+---
+{
+	allOrNone: true,
+	compositeRequest: 
+	flatten(
+		[
+
+ 		// UnitOfMeasure
+
+			{
+				method: "POST",
+				referenceId: "UnitOfMeasure",
+				url: "/services/data/v51.0/sobjects/UnitOfMeasure",
+				body: {
+					Type: "Custom",
+					Name: vars.medicationRequest.amount.denominator.unit,
+					UnitCode: vars.medicationRequest.amount.denominator.unit
+				}
+			}	
+		
+			
+			
+			
+		]
+		
+	)
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+						<salesforce-composite:execute-composite-request doc:name="Insert UnitOfMeasurerecords" doc:id="3639f2d1-d395-41ff-9b74-d288872e7c7d" config-ref="Salesforce_Composite_Config" />
+						<ee:transform doc:name="Set QuantityUnitId" doc:id="ce42cf39-843d-4284-ad30-5166b666b2f9">
+							<ee:message />
+							<ee:variables>
+								<ee:set-variable variableName="QuantityUnitId"><![CDATA[%dw 2.0
+output application/json
+---
+payload..id[0]]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+					</when>
+					<when expression="(sizeOf(vars.unitOfMeasureLU) &gt; 0) and !isEmpty(vars.medicationRequest.amount.denominator.unit)">
+						<ee:transform doc:name="Set QuantityUnitId" doc:id="1119d86a-c0c2-4025-92c4-36897085b9c7">
+							<ee:message>
+							</ee:message>
+							<ee:variables>
+								<ee:set-variable variableName="QuantityUnitId"><![CDATA[%dw 2.0
+output application/json
+---
+vars.unitOfMeasureLU.Id[0]]]></ee:set-variable>
+							</ee:variables>
+						</ee:transform>
+					</when>
+					<otherwise>
+						<logger level="INFO" doc:name="Logger" doc:id="711377d3-36fb-4c79-abe4-145c97dfb82f" message="No UnitOfMeasure Upsert" />
+					</otherwise>
+				</choice>
+			</route>
+			<route >
+				<logger level="INFO" doc:name="Logger" doc:id="c84e0d6c-bb9a-4450-99e3-606b5b4d7902" />
+			</route>
+		</scatter-gather>
+	</flow>
+	<flow name="common-medicationrequest_upsert-codeset" doc:id="00f13678-04a9-48d0-a22d-f1d17d4fcf6a" >
+		<ee:transform doc:name="medicationCodeSetRequest" doc:id="1e377c97-b825-425b-bc1c-3265220580f6" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="medicationCodeSetRequest" ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+
+
+---
+{
+	
+	medicationCodeSets: [] 
+	
+	
+
+
+ 
+// form (codingConcept is Object)
+ ++ (vars.medicationRequest.form.coding  default [] map (coding, codingIndex) ->
+						codeSet:
+						{
+							"Code": coding.code,
+						    "SourceSystem": coding.system,
+						    "CodeDescription": coding.display,
+						    "SystemVersion": coding.version,
+						    "BundleText": vars.medicationRequest.hospitalization.reAdmission.text,
+						    "BundleType": "FORM"
+					    })	
+					    
+// code (codingConcept is Object)
+ ++ (vars.medicationRequest.code.coding  default [] map (coding, codingIndex) ->
+						codeSet:
+						{
+							"Code": coding.code,
+						    "SourceSystem": coding.system,
+						    "CodeDescription": coding.display,
+						    "SystemVersion": coding.version,
+						    "BundleText": vars.medicationRequest.hospitalization.dischargeDisposition.text,
+						    "BundleType": "CODE"
+					    })	
+					    
+ 				    	
+
+
+// Type (codingConcept is Array)
+++ 	flatten (vars.medicationRequest."identifier"  default[] map (codingConcept, codingConceptIndex) ->	 		
+				 (codingConcept."type".coding map (coding, codingIndex) ->
+						codeSet:
+						{
+							"Code": coding.code,
+						    "SourceSystem": coding.system,
+						    "CodeDescription": coding.display,
+						    "SystemVersion": coding.version,
+						    "BundleText": codingConcept.text,
+						    "BundleType": "IDENTIFIER"
+					    }
+				 )  
+				 
+				 
+ 			)
+ 			
+}
+ ]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="queryCodeSetStr" doc:id="5665611f-f2f4-4d22-bbc0-24fab968c2e3" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="queryCodeSetStr" ><![CDATA[%dw 2.0
+output application/json
+---
+ 
+ (
+		(vars.medicationCodeSetRequest.medicationCodeSets map (codeSet, codeSetIndex) ->
+			"(" ++ "Code = '" ++ (if (!isEmpty(codeSet.codeSet.Code)) codeSet.codeSet.Code else "") ++ "'" ++ " and " 
+				++ "Name = '" ++ (if (!isEmpty(codeSet.codeSet.CodeDescription)) codeSet.codeSet.CodeDescription else "")    ++ "'" ++  " and " 
+				++ "SystemVersion = '" ++ (if (!isEmpty(codeSet.codeSet.SystemVersion)) codeSet.codeSet.SystemVersion else "")  ++ "'" ++  " and "  
+				//++ "CodeSetType = '" ++ (if (!isEmpty(codeSet.codeSet.CodeSetType)) codeSet.codeSet.CodeSetType else "") ++ "'" ++  " and " 
+				++ "SourceSystem = '" ++ (if (!isEmpty(codeSet.codeSet.SourceSystem)) codeSet.codeSet.SourceSystem else "")  ++ "'" ++ 	
+			")" 
+		) joinBy ' or '
+		)
+		
+	 ]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<salesforce:query doc:name="Get CodeSets object" doc:id="0f074370-7216-479a-b4a3-e6bcee909211" config-ref="Salesforce_Config" readTimeoutUnit="NANOSECONDS" target="codeSetExisting" >
+			<salesforce:salesforce-query ><![CDATA[SELECT 
+Id,
+Code,
+CodeDescription,
+CodeSetKey,
+CodeSetType,
+CreatedById,
+CreatedDate,
+EndDate,
+IsActive,
+IsCustomCode,
+IsDeleted,
+IsLocked,
+IsPrimary,
+LastModifiedById,
+LastModifiedDate,
+LastReferencedDate,
+LastViewedDate,
+MayEdit,
+Name,
+OwnerId,
+SourceSystem,
+StartDate,
+SystemModstamp,
+SystemVersion 
+FROM CodeSet
+where :queryCodeSetStr]]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java --- { "queryCodeSetStr" : vars.queryCodeSetStr }]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="Create codeset upsert request" doc:id="2e909f88-2e7f-42bf-92cd-a843a59d786b" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="codeSetList" ><![CDATA[%dw 2.0
+output application/json
+var CodeSet = (vars.medicationCodeSetRequest.medicationCodeSets.codeSet map (codeSet, codeSetIndex) ->
+		 				(codeSet ) ++ Id: (vars.codeSetExisting filter (($.Code == codeSet.Code) and 
+	 					($.Name == codeSet.CodeDescription) and 
+	 					($.SystemVersion == codeSet.SystemVersion) and 
+	 					//($.CodeSetType == codeSet.CodeSetType) and 
+	 					($.SourceSystem == codeSet.SourceSystem)
+	 					))[0].Id) 
+
+---
+{
+	allCodeSet: CodeSet,
+	newCodeSet: CodeSet filter ($.Id == null),
+	existingCodeSet: CodeSet filter ($.Id != null),
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<ee:transform doc:name="Create upsert medication request" doc:id="a3f567c3-b3f5-4cfe-ad7c-944ad5031fb7" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+import getCodeSetUpsert from dw::Medication::upsertGetRequests
+
+---
+{
+	allOrNone: true,
+	compositeRequest: 
+	flatten(
+		[
+
+ 		// codeSet
+			(vars.codeSetList.newCodeSet map (cs, csIndex) ->
+			{
+				method: "POST",
+				referenceId: "CodeSet" ++ csIndex,
+				url: "/services/data/v51.0/sobjects/CodeSet",
+				body: getCodeSetUpsert(cs)
+			}	
+			) ,			
+			
+			
+			
+		]
+		
+	)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce-composite:execute-composite-request doc:name="Insert CodeSet records" doc:id="aee4e82f-4070-4e01-ba83-e62bc1e35162" config-ref="Salesforce_Composite_Config" />
+		<ee:transform doc:name="Create Final codeset upsert request with Ids" doc:id="70f071cc-1993-4f8d-acb0-6e597e1f8958" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="codeSetList" ><![CDATA[%dw 2.0
+output application/json
+
+     
+var	newCodeSetwithId = vars.codeSetList.newCodeSet map (c, cIndex) ->
+		(c - "Id") ++ Id: (payload."compositeResponse"[cIndex].body.id)
+      
+var CodeSet = (vars.codeSetList.allCodeSet map (codeSet, codeSetIndex) ->
+	(if (codeSet.Id == null)
+		 (newCodeSetwithId filter $.Code == codeSet.Code)  reduce $
+    else
+     (codeSet)))  
+---
+{
+
+	allCodeSet: CodeSet,
+	newCodeSet: newCodeSetwithId
+ 
+ 
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<flow-ref doc:name="common-medicationrequest_upsert-codesetbundle" doc:id="f588473d-52cb-4e3d-bf31-34b6a8868896" name="common-medicationrequest_upsert-codesetbundle" />
+		<logger level="INFO" doc:name="CodeSet Lookup completed" doc:id="131d4eaf-99ec-4263-bba9-3ddcb8196aea" message="CodeSet Lookup completed" category="${hc.logger.package}" />
+	</flow>
+	<flow name="common-medicationrequest_upsert-codesetbundle" doc:id="c21e2f6e-2ccc-4403-af94-ad7c150c3c67" >
+		<ee:transform doc:name="Create upsert CodeSetBundle Request" doc:id="b042adc6-30e1-4eb6-9602-6151848e923a" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="medicationCodeSetBundleRequest" ><![CDATA[%dw 2.0
+output application/json skipNullOn="everywhere"
+import getCodeSetBundleUpsert from dw::Medication::upsertGetRequests
+---
+{
+	allOrNone: false,
+	compositeRequest: 
+	flatten(
+		[
+		
+  			// codeSet for BundleType = FORM
+  			(if (vars.codeSetList.allCodeSet..BundleType contains("FORM"))
+  			{
+	  			method: "POST",	
+	  			referenceId: "CodeSetBundleType",
+	  			url: "/services/data/v51.0/sobjects/CodeSetBundle",
+	  			
+	  			body: (getCodeSetBundleUpsert(vars.codeSetList.allCodeSet, "FORM", "Medication FORM Bundle"))  
+			} else []),			
+			
+  			// codeSet for BundleType = CODE
+  			(if (vars.codeSetList.allCodeSet..BundleType contains("CODE"))
+  			{
+  			method: "POST",	
+  			referenceId: "CodeSetBundleCode",
+  			url: "/services/data/v51.0/sobjects/CodeSetBundle",
+  			
+  			body: (getCodeSetBundleUpsert(vars.codeSetList.allCodeSet, "CODE", "Medication CODE Code Bundle"))
+  
+			} else []),
+			
+  			// codeSet for BundleType = Identifier
+  			(if (vars.codeSetList.allCodeSet..BundleType contains("IDENTIFIER"))
+  			{
+  			method: "POST",	
+  			referenceId: "CodeSetBundleIdentifier",
+  			url: "/services/data/v51.0/sobjects/CodeSetBundle",
+  			
+  			body: (getCodeSetBundleUpsert(vars.codeSetList.allCodeSet, "IDENTIFIER", "Identifier Bundle"))
+  
+			} else []),			
+			
+ 		
+						
+
+		]
+		
+	)
+}
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<salesforce-composite:execute-composite-request doc:name="Insert CodeSetBundle records" doc:id="e0046e2a-3724-4ea7-b508-423443be8d57" config-ref="Salesforce_Composite_Config" >
+			<salesforce-composite:request-body ><![CDATA[#[vars.medicationCodeSetBundleRequest]]]></salesforce-composite:request-body>
+		</salesforce-composite:execute-composite-request>
+		<ee:transform doc:name="Create Final codeSetBundleList" doc:id="aea6aa57-865f-42fc-8c49-8f381a5edc16" >
+			<ee:message />
+			<ee:variables >
+				<ee:set-variable variableName="codeSetBundleList" ><![CDATA[%dw 2.0
+output application/json
+---
+{	
+	allCodeBundleSet: []
+	
+	++ payload.compositeResponse map (c, ci) ->
+		
+			(if (c.referenceId == "CodeSetBundleType")
+				(if (c.httpStatusCode == 201)
+				{
+					"BundleType": "FORM",
+					"Id": (c.body.id)
+					
+				} else{
+					"BundleType": "FORM",
+					"Id": (c.body[0].message splitBy(" "))[-1]
+					
+				}
+			)else if (c.referenceId == "CodeSetBundleCode")
+				(if (c.httpStatusCode == 201)
+				{
+					"BundleType": "CODE",
+					"Id": c.body.id 
+					
+				}else
+				{	
+					"BundleType": "CODE",
+					"Id": (c.body[0].message splitBy(" "))[-1]
+					
+				 }
+
+				 
+			)else if (c.referenceId == "CodeSetBundleIdentifier")
+				(if (c.httpStatusCode == 201)
+				{
+					"BundleType": "IDENTIFIER",
+					"Id": c.body.id 
+					
+				}else
+				{	
+					"BundleType": "IDENTIFIER",
+					"Id": (c.body[0].message splitBy(" "))[-1]
+					
+				 }				 
+				 
+				 		
+						
+			)else null) 
+			
+
+	
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="CodeSetBundle Lookup completed" doc:id="82283033-37e4-471e-85c0-748a6ab9613f" message="CodeSetBundle  Lookup completed" category="${hc.logger.package}" />
+	</flow>
+	<sub-flow name="common-medicationrequest_check-upsert-medication-response" doc:id="e65155b5-e9d1-4487-9f7e-628db0978388" >
+		<choice doc:name="Was response successful?" doc:id="20dab6e9-68e7-49d1-9d50-0349d7a1be25" >
+			<when expression="#[(vars.response.compositeResponse[0].httpStatusCode == 204 or vars.response.compositeResponse[0].httpStatusCode == 201)]" >
+				<logger level="INFO" doc:name="Response was successful and new Id" doc:id="b3c8318e-91cf-442d-9a9c-d68c4b4c7843" message="Response was successful and new ID was created for Location" category="${hc.logger.package}" />
+				<ee:transform doc:name="Merge Id in request object and set response" doc:id="636aa32a-84f3-4520-9f3f-0e086191f297" >
+					<ee:message >
+						<ee:set-payload resource="dw/Medication/merge-id-and-request.dwl" />
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Response was not successful" doc:id="65c49bef-aa56-458d-b923-b9d922cdaf14" message="Response was successful" category="${hc.logger.package}" />
+				<set-variable value="400" doc:name="400 status code" doc:id="3cee488d-c1e4-499d-bf4e-5562dfd10734" variableName="httpStatus" />
+				<set-variable value='#[(payload.compositeResponse..message joinBy  ", ") default "Upsert Medication failed."]' doc:name="Set error text" doc:id="581485c6-df90-41a2-8651-442acf3befd4" variableName="issueText" />
+				<ee:transform doc:name="Set operation response message" doc:id="a511072c-f792-4844-8865-cfd21c615b4f" >
+					<ee:message >
+						<ee:set-payload resource="dw/operation-outcome-response.dwl" />
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<sub-flow name="common-medicationrequest_query-resources" doc:id="c73f309c-3e07-442b-bd7d-11261faeb3bf" >
+					<salesforce:query doc:name="Query medication" doc:id="82165246-741a-42a8-8709-89a02ea95880" config-ref="Salesforce_Config" target="medication" >
+				<salesforce:salesforce-query ><![CDATA[:query]]></salesforce:salesforce-query>
+				<salesforce:parameters ><![CDATA[#[output application/java --- { "query" : vars.query default "" }]]]></salesforce:parameters>
+			</salesforce:query>
+			<flow-ref doc:name="common-medicationrequest_reverse-lookup-query-processes" doc:id="188f2530-206a-4845-b413-1e058a0fcd05" name="common-medicationrequest_reverse-lookup-query-processes" />
+			<ee:transform doc:name="Init acc_medicationRLUwithCodeSetValues" doc:id="e0c119b4-8f70-46ab-83f4-2e6995127744" >
+				<ee:message >
+				</ee:message>
+				<ee:variables >
+					<ee:set-variable variableName="acc_medicationRLUwithCodeSetValues" ><![CDATA[%dw 2.0
+output application/json
+---
+[]]]></ee:set-variable>
+				</ee:variables>
+			</ee:transform>
+			<foreach doc:name="For Each" doc:id="50283b65-8414-49b1-a2fe-61ebb37a3063" counterVariableName="enocunterCounter" collection="#[vars.medication]">
+				<flow-ref doc:name="common-medicationrequest_lookup-query-processes" doc:id="d6793eec-2703-4cb0-b2e0-df0ba3176999" name="common-medicationrequest_lookup-query-processes" />
+				<flow-ref doc:name="common-medicationrequest_lookup-query-codeset" doc:id="f2f0287e-bb98-4211-b139-ebe3b30adcca" name="common-medicationrequest_lookup-query-codeset" />
+				<ee:transform doc:name="accumulating medicationRLUwithCodeSetValues" doc:id="25ad3270-3313-4601-8daa-949bc6a5b4d3" >
+					<ee:message >
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="acc_medicationRLUwithCodeSetValues" ><![CDATA[%dw 2.0
+output application/json
+---
+(vars.acc_medicationRLUwithCodeSetValues + 
+	[
+		vars.medicationRLUwithCodeSetValues ++ 
+	{unitOfMeasure_QuantityUnitIdLU: vars.unitOfMeasure_QuantityUnitIdLU} ++ 
+	{manufacturerIdLU:vars.manufacturerIdLU}
+	
+	]
+)]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</foreach>
+			<logger level="INFO" doc:name="Logger" doc:id="0836b97a-1436-4fc8-996d-602812537549" message="#[vars.acc_medicationRLUwithCodeSetValues]" category="${hc.logger.package}" />
+	</sub-flow>
+	
+
+</mule>

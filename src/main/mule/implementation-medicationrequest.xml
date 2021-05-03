@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:salesforce-composite="http://www.mulesoft.org/schema/mule/salesforce-composite"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/salesforce-composite http://www.mulesoft.org/schema/mule/salesforce-composite/current/mule-salesforce-composite.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<flow name="implementation-medicationrequest_get-medicationrequest-by-id" doc:id="53a4b313-59ac-4222-b366-1532eb1217d4" >
+		<until-successful maxRetries="${until.successful.maxretries}" doc:name="Retry 3 Times" doc:id="2d753245-9b5b-45e7-8423-9f1965815de3" millisBetweenRetries="${until.successful.timebetween}">
+			<ee:transform doc:name="query" doc:id="c2ac3285-f64b-4a7a-a57f-91dd7b2dc152">
+						<ee:message>
+						</ee:message>
+						<ee:variables>
+							<ee:set-variable variableName="query"><![CDATA[%dw 2.0
+output application/json
+---
+"SELECT 
+CreatedById,
+CreatedDate,
+Id,
+IsDeleted,
+IsLocked,
+LastModifiedById,
+LastModifiedDate,
+LastReferencedDate,
+LastViewedDate,
+ManufacturerId,
+MayEdit,
+MedicationCodeId,
+MedicationFormId,
+Name,
+OwnerId,
+QuantityDenominator,
+QuantityNumerator,
+QuantityUnitId,
+SourceSystem,
+SourceSystemIdentifier,
+SourceSystemModified,
+Status,
+SystemModstamp 
+FROM Medication" 
+replace /\n/ with " " 
+++ 
+" WHERE ( Id = '" 
+++ 
+attributes.uriParams.id default ""
+++ 
+"')" 
+]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+			<salesforce:query doc:name="Query medication" doc:id="06d544de-4128-49e1-abd6-9cd590e0439a" config-ref="Salesforce_Config" target="medication" targetValue="#[payload[0]]" >
+				<salesforce:salesforce-query ><![CDATA[:query]]></salesforce:salesforce-query>
+				<salesforce:parameters ><![CDATA[#[output application/java --- { "query" : vars.query default "" }]]]></salesforce:parameters>
+			</salesforce:query>
+			<set-variable value="#[vars.medication.Id]" doc:name="Set requestById" doc:id="3ec5b714-e94e-4977-b648-de97835be19a" variableName="requestById"/>
+			<choice doc:name="Record found?" doc:id="ba8946fe-05e0-483d-9f82-6284eadb3aee" >
+				<when expression="#[((vars.requestById != null) or !isEmpty(vars.medication))]">
+					<logger level="INFO" doc:name="Record found" doc:id="63261b4a-ab32-4cb4-88ad-c1b1fd05b26e" message="Medication information found." category="${hc.logger.package}" />
+					<set-variable value="#[&quot;(id = '&quot; ++ vars.requestById ++ &quot;')&quot;]" doc:name="whereClause" doc:id="136d5b2b-f5d1-4bb0-9e45-d1368bafb543" variableName="whereClause" />
+					<flow-ref doc:name="common-medicationrequest_query-resources" doc:id="714a41b0-a16c-439f-934f-06f03b2e147f" name="common-medicationrequest_query-resources"/>
+					<ee:transform doc:name="Create medication response" doc:id="c8e2435f-8383-485a-8804-f1278a74fb15">
+					<ee:message>
+						<ee:set-payload resource="dw/Medication/get-response.dwl" />
+					</ee:message>
+				</ee:transform>
+				</when>
+				<otherwise >
+					<logger level="INFO" doc:name="Medication not found" doc:id="c1658fae-4ea7-470e-ba84-14181894fe1c" message="Medication not found" category="${hc.logger.package}" />
+					<set-variable value="404" doc:name="Set 404 status code" doc:id="2bbecedb-4bcd-442a-87ab-20ed08471493" variableName="httpStatus" />
+					<set-payload value='#[%dw 2.0
+output application/json
+---
+{
+	resourceType: "OperationOutcome",
+	issue: [{
+		severity: "error",
+		code: "value",
+		details: {
+			text: "Medication not found"
+		}
+	}]
+}]' doc:name="Set status messaage" doc:id="897113f5-301d-4879-ace3-5e595f1825de" />
+				</otherwise>
+			</choice>
+		</until-successful>
+	</flow>
+	<flow name="implementation-medicationrequest_search-medicationrequest" doc:id="54c31e48-7792-49f2-89c6-ff13c033d225" >
+		<choice doc:name="Check for Implemented Search Query Params" doc:id="ca5deb6e-2258-43f2-9ed8-037dbfb30c8c" >
+			<when expression='#[import * from dw::core::Objects 
+---
+sizeOf( 
+	keySet(attributes.queryParams) -- 
+	["identifier" , "account", "class", "date", "location", "participant", "service-provider", "special-arrangement", "status", "type", "patient", "_id", "_profile", "_summary"] 
+) == 0]' >
+				<ee:transform doc:name="Create search query" doc:id="aed44d29-b3f6-44f4-bfdc-7e553e9277ae" >
+					<ee:message />
+					<ee:variables >
+						<ee:set-variable resource="dw/Medication/resource-search-query.dwl" variableName="query" />
+					</ee:variables>
+				</ee:transform>
+				<set-variable value='#[(vars.query splitBy(" WHERE "))[-1]]' doc:name="whereClause" doc:id="8e8c6d71-beb8-498d-8cc8-34897a2fa4c9" variableName="whereClause"/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="Query Params Not Implemented" doc:id="f428492a-c8ba-4f00-9b33-8e3ec8f06ede" message="#[output application/json --- attributes.queryParams]" category="${hc.logger.package}" />
+				<raise-error doc:name="Query Params Not Implemented" doc:id="f6ffebae-c7ef-4ae7-a65c-01d67d6f2ecb" type="IMPL:QUERY_PARAMS_NOT_IMPLEMENTED" description="Combination of requested params has not been implemented" />
+			</otherwise>
+		</choice>
+		<try doc:name="Try query medication" doc:id="24c5a2d7-0706-4b86-98aa-7ff7dddb584e" >
+			<flow-ref doc:name="common-medicationrequest_query-resources" doc:id="5e243f56-fda6-4556-b325-626f6b8b195a" name="common-medicationrequest_query-resources" />
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue - Search medication failed" doc:id="b41c8d4a-1698-4b4a-b211-5bc90784e9c9" >
+					<logger level="INFO" doc:name="Query medication failed" doc:id="09615bf1-1669-47a3-8711-e699ecc0bab1" message="Query medication failed" category="${hc.logger.package}" />
+					<ee:transform doc:name="500 Internal Server Error" doc:id="efe4d9f4-d741-4499-9f39-a92d346c2895" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	resourceType: "OperationOutcome",
+	issue: [{
+		severity: "error",
+		code: "processing",
+		details: {
+			text: error.description
+		}
+	}]
+}]]></ee:set-payload>
+						</ee:message>
+						<ee:variables >
+							<ee:set-variable variableName="httpStatus" ><![CDATA[500]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<ee:transform doc:name="Create search response" doc:id="d36c9cb2-2973-46c4-8dc3-40d959b9a2a9">
+				<ee:message>
+					<ee:set-payload resource="dw/Medication/resource-search-response.dwl" />
+				</ee:message>
+			</ee:transform>
+	</flow>
+	<flow name="implementation-medicationrequest_post-medicationrequest" doc:id="8ecf85c1-f3f8-4df6-99ab-9855728ae1ea">
+		<logger level="INFO" doc:name="Post Medication started" doc:id="be1b559f-aab7-4159-998a-c52705b1a437" message="Post Medication started" category="${hc.logger.package}" />
+		<set-variable value="#[payload]" doc:name="Store medication request" doc:id="be735f35-8a15-45e7-aefe-f6ddae153ccf" variableName="medicationRequest" />
+		<flow-ref doc:name="common-medicationrequest_upsert-codeset" doc:id="af82d390-0042-4c24-b8d1-2ee3ea52b662" name="common-medicationrequest_upsert-codeset" />
+		<flow-ref doc:name="common-medicationrequest_upsert-lookup" doc:id="eb59d672-334f-41af-bdf3-1864f416cab0" name="common-medicationrequest_upsert-lookup"/>
+		<flow-ref doc:name="common-medicationrequest_upsert-medication-object" doc:id="a6546fc2-066b-4f51-a694-171f544739df" name="common-medicationrequest_upsert-medication-object" />
+		<logger level="INFO" doc:name="Post Medication ended" doc:id="1e90f9a2-32ea-48e0-886e-7aff2fa2819a" message="Post Medication ended" category="${hc.logger.package}" />
+	</flow>
+</mule>
